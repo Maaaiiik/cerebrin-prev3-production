@@ -1,0 +1,291 @@
+@custom-variant dark (&:is(.dark *));
+
+/* ─────────────────────────────────────────────────────────────
+   LIGHT MODE  (default)
+   Clean white/off-white surfaces, dark slate text
+───────────────────────────────────────────────────────────── */
+:root {
+  /* Responsive font sizes */
+  --font-size: 14px;  /* Mobile base */
+
+  /* Core surfaces */
+  --background: #F8FAFC;          /* slate-50  */
+  --foreground: #0F172A;          /* slate-900 */
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+
+  /* Brand / action */
+  --primary: #7C3AED;             /* violet-700 */
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;           /* slate-100 */
+  --secondary-foreground: #0F172A;
+
+  /* Muted / disabled / helper */
+  --muted: #F1F5F9;               /* slate-100 */
+  --muted-foreground: #64748B;    /* slate-500 */
+  --accent: #EDE9FE;              /* violet-100 */
+  --accent-foreground: #4C1D95;   /* violet-900 */
+
+  /* Feedback */
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+
+  /* Chrome */
+  --border: #E2E8F0;              /* slate-200 */
+  --input: #F8FAFC;
+  --input-background: #F1F5F9;
+  --switch-background: #CBD5E1;   /* slate-300 */
+  --ring: #7C3AED;
+  --radius: 0.625rem;
+
+  /* Sidebar-specific (slightly tinted) */
+  --sidebar: #F1F5F9;             /* slate-100 */
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #7C3AED;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EDE9FE;
+  --sidebar-accent-foreground: #4C1D95;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #7C3AED;
+
+  /* Cerebrin-specific: code/terminal blocks stay dark in both modes */
+  --code-bg: #1E293B;             /* slate-800 */
+  --code-bg-deep: #0F172A;        /* slate-900 */
+
+  /* Charts */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DARK MODE  (Cerebrin #0F172A Slate)
+───────────────────────────────────────────────────────────── */
+.dark {
+  /* Core surfaces */
+  --background: #0F172A;          /* slate-900 – main bg */
+  --foreground: #F1F5F9;          /* slate-100 */
+  --card: #0F172A;                /* same as bg – nav/sidebar flush */
+  --card-foreground: #F1F5F9;
+  --popover: #1E293B;             /* slate-800 – dropdowns elevated */
+  --popover-foreground: #F1F5F9;
+
+  /* Brand / action */
+  --primary: #8B5CF6;             /* violet-500 */
+  --primary-foreground: #FFFFFF;
+  --secondary: #1E293B;           /* slate-800 */
+  --secondary-foreground: #F1F5F9;
+
+  /* Muted / disabled / helper */
+  --muted: #1E293B;               /* slate-800 – raised panels */
+  --muted-foreground: #94A3B8;    /* slate-400 */
+  --accent: #1E293B;
+  --accent-foreground: #F1F5F9;
+
+  /* Feedback */
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  /* Chrome */
+  --border: #334155;              /* slate-700 */
+  --input: #1E293B;
+  --input-background: #1E293B;
+  --switch-background: #475569;   /* slate-600 */
+  --ring: #8B5CF6;
+
+  /* Sidebar */
+  --sidebar: #0F172A;             /* flush with background */
+  --sidebar-foreground: #F1F5F9;
+  --sidebar-primary: #8B5CF6;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1E293B;
+  --sidebar-accent-foreground: #F1F5F9;
+  --sidebar-border: #334155;
+  --sidebar-ring: #8B5CF6;
+
+  /* Code blocks — even deeper in dark mode */
+  --code-bg: #090E17;
+  --code-bg-deep: #060B12;
+
+  /* Charts */
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Tailwind v4 color token exposure
+───────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  /* Cerebrin-custom */
+  --color-code-bg: var(--code-bg);
+  --color-code-bg-deep: var(--code-bg-deep);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RESPONSIVE TYPOGRAPHY
+───────────────────────────────────────────────────────────── */
+@media (min-width: 640px) {
+  :root {
+    --font-size: 15px;  /* Tablet */
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --font-size: 16px;  /* Desktop */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Prevent text size adjust on orientation change */
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html {
+    font-size: var(--font-size);
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h4 {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
+
+  /* Breadcrumb slide animation */
+  @keyframes breadcrumb-slide {
+    0% {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    /* Larger tap targets for touch devices */
+    button,
+    a,
+    input[type="checkbox"],
+    input[type="radio"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Prevent double-tap zoom */
+    * {
+      touch-action: manipulation;
+    }
+  }
+
+  /* Reduce motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

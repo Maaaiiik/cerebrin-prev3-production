@@ -1,0 +1,355 @@
+{
+    "name": "Cerebrin — Notificaciones Diarias",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "triggerAtHour": 9,
+                            "triggerAtMinute": 0
+                        }
+                    ]
+                }
+            },
+            "id": "cron-trigger",
+            "name": "Cada día a las 9:00 AM",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                220,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "={{ $env.SUPABASE_URL }}/rest/v1/workspaces?select=id,name,owner_id&is_active=eq.true",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                        },
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_ANON_KEY }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "get-workspaces",
+            "name": "Obtener Workspaces Activos",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "fieldToSplitOut": "={{ $json }}",
+                "options": {}
+            },
+            "id": "split-workspaces",
+            "name": "Iterar por Workspace",
+            "type": "n8n-nodes-base.splitOut",
+            "typeVersion": 1,
+            "position": [
+                660,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "={{ $env.SUPABASE_URL }}/rest/v1/documents?workspace_id=eq.{{ $json.id }}&type=eq.task&status=neq.Hecho&select=id,title,status,priority,due_date&order=priority.desc,created_at.desc&limit=5",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                        },
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_ANON_KEY }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "get-pending-tasks",
+            "name": "Obtener Tareas Pendientes",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                880,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "={{ $env.SUPABASE_URL }}/rest/v1/agent_approval_queue?workspace_id=eq.{{ $json.id }}&status=eq.pending&select=id,action_title&order=created_at.asc&limit=3",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                        },
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_ANON_KEY }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "get-approvals",
+            "name": "Obtener Aprobaciones Pendientes",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                880,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "={{ $env.SUPABASE_URL }}/rest/v1/user_perspectives?user_id=eq.{{ $json.owner_id }}&select=phone,metadata&limit=1",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                        },
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_ANON_KEY }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "get-user-contact",
+            "name": "Obtener Contacto del Usuario",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                880,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const tasks = $('Obtener Tareas Pendientes').first().json || [];\nconst approvals = $('Obtener Aprobaciones Pendientes').first().json || [];\nconst contactData = $('Obtener Contacto del Usuario').first().json || [];\n\nconst contact = Array.isArray(contactData) ? contactData[0] : contactData;\nconst phone = contact?.phone;\nconst platform = contact?.metadata?.messaging_platform || 'whatsapp';\n\nif (!phone) {\n  return { json: { skip: true, reason: 'No phone found' } };\n}\n\nconst taskList = Array.isArray(tasks) ? tasks : [];\nconst approvalList = Array.isArray(approvals) ? approvals : [];\n\nif (taskList.length === 0 && approvalList.length === 0) {\n  return { json: { skip: true, reason: 'Nothing to report' } };\n}\n\nconst priorityEmoji = { high: '🔴', medium: '🟡', low: '🟢' };\nconst today = new Date().toLocaleDateString('es-CL', { weekday: 'long', month: 'long', day: 'numeric' });\n\nlet message = `☀️ *Buenos días — ${today}*\\n\\n`;\nmessage += `📊 *Tu resumen diario de Cerebrin:*\\n\\n`;\n\nif (taskList.length > 0) {\n  message += `📋 *Tareas pendientes (${taskList.length}):*\\n`;\n  taskList.forEach((t, i) => {\n    const emoji = priorityEmoji[t.priority] || '⬜';\n    const dueStr = t.due_date ? ` · 📅 ${new Date(t.due_date).toLocaleDateString('es-CL')}` : '';\n    message += `  ${i + 1}. ${emoji} ${t.title}${dueStr}\\n`;\n  });\n  message += '\\n';\n}\n\nif (approvalList.length > 0) {\n  message += `⏳ *Aprobaciones pendientes (${approvalList.length}):*\\n`;\n  approvalList.forEach((a, i) => {\n    message += `  ${i + 1}. ${a.action_title}\\n`;\n  });\n  message += '\\nEscribe *\"aprobar\"* para revisar.\\n\\n';\n}\n\nmessage += `💡 _Escribe \"tareas\" para ver todas o cuéntame qué necesitas hoy._`;\n\nreturn {\n  json: {\n    skip: false,\n    phone,\n    platform,\n    message\n  }\n};"
+            },
+            "id": "build-message",
+            "name": "Construir Mensaje del Día",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1100,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.skip }}",
+                            "value2": false
+                        }
+                    ]
+                }
+            },
+            "id": "check-skip",
+            "name": "¿Tiene contenido?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                1320,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.OPENCLAW_GATEWAY_URL || 'http://localhost:3100' }}/api/send",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer {{ $env.OPENCLAW_API_KEY }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "raw",
+                "rawContentType": "application/json",
+                "body": "={{ JSON.stringify({ to: $json.phone, platform: $json.platform, text: $json.message }) }}"
+            },
+            "id": "send-daily",
+            "name": "Enviar Resumen por WhatsApp",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1540,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.SUPABASE_URL }}/rest/v1/activity_feed",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                        },
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_ANON_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "raw",
+                "rawContentType": "application/json",
+                "body": "={{ JSON.stringify({ workspace_id: $('Iterar por Workspace').item.json.id, user_id: $('Iterar por Workspace').item.json.owner_id, action_type: 'daily_summary_sent', title: '☀️ Resumen diario enviado', description: 'Enviado via ' + $json.platform + ' a ' + $json.phone }) }}"
+            },
+            "id": "log-daily",
+            "name": "Log Resumen Enviado",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1760,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Cada día a las 9:00 AM": {
+            "main": [
+                [
+                    {
+                        "node": "Obtener Workspaces Activos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Obtener Workspaces Activos": {
+            "main": [
+                [
+                    {
+                        "node": "Iterar por Workspace",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Iterar por Workspace": {
+            "main": [
+                [
+                    {
+                        "node": "Obtener Tareas Pendientes",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Obtener Aprobaciones Pendientes",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Obtener Contacto del Usuario",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Obtener Contacto del Usuario": {
+            "main": [
+                [
+                    {
+                        "node": "Construir Mensaje del Día",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Construir Mensaje del Día": {
+            "main": [
+                [
+                    {
+                        "node": "¿Tiene contenido?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "¿Tiene contenido?": {
+            "main": [
+                [
+                    {
+                        "node": "Enviar Resumen por WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Enviar Resumen por WhatsApp": {
+            "main": [
+                [
+                    {
+                        "node": "Log Resumen Enviado",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "saveManualExecutions": true,
+        "callerPolicy": "workflowsFromSameOwner"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "cerebrin"
+        },
+        {
+            "name": "daily"
+        },
+        {
+            "name": "notifications"
+        }
+    ],
+    "triggerCount": 1,
+    "updatedAt": "2026-02-22T06:00:00.000Z",
+    "versionId": "1"
+}

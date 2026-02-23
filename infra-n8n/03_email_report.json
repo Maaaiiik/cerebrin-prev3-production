@@ -1,0 +1,127 @@
+{
+    "name": "Cerebrin — Email con Informe",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "send-email-report",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-email",
+            "name": "Webhook — Enviar Email",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                220,
+                300
+            ],
+            "webhookId": "send-email-report"
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\n\nconst title = input.title || 'Informe Cerebrin';\nconst content = input.content || '';\nconst recipientEmail = input.email || '';\nconst recipientName = input.recipient_name || 'Usuario';\nconst pdfUrl = input.pdf_url || '';\nconst pipelineId = input.pipeline_id || 'unknown';\n\nif (!recipientEmail) {\n  throw new Error('Se requiere el campo email');\n}\n\n// Convertir Markdown a HTML\nfunction markdownToHtml(md) {\n  let html = md\n    .replace(/^### (.+)$/gm, '<h3 style=\"color:#7c3aed;font-size:16px;margin:20px 0 8px;\">$1</h3>')\n    .replace(/^## (.+)$/gm, '<h2 style=\"color:#7c3aed;font-size:20px;margin:25px 0 10px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;\">$1</h2>')\n    .replace(/^# (.+)$/gm, '<h1 style=\"color:#1a1a2e;font-size:24px;margin:25px 0 12px;\">$1</h1>')\n    .replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>')\n    .replace(/\\*(.+?)\\*/g, '<em>$1</em>')\n    .replace(/^- (.+)$/gm, '<li style=\"margin:4px 0;\">$1</li>')\n    .replace(/^> (.+)$/gm, '<blockquote style=\"border-left:4px solid #7c3aed;background:#f3f0ff;padding:12px 20px;margin:15px 0;border-radius:0 8px 8px 0;\">$1</blockquote>')\n    .replace(/^---$/gm, '<hr style=\"border:none;border-top:1px solid #e5e7eb;margin:20px 0;\"/>')\n    .replace(/\\n\\n/g, '</p><p style=\"margin:0 0 12px;line-height:1.7;color:#374151;\">')\n    .replace(/\\n/g, '<br/>');\n  return '<p style=\"margin:0 0 12px;line-height:1.7;color:#374151;\">' + html + '</p>';\n}\n\nconst htmlBody = markdownToHtml(content);\n\nconst emailHtml = `\n<div style=\"font-family:'Inter',-apple-system,sans-serif;max-width:640px;margin:0 auto;background:#ffffff;\">\n  <!-- Header -->\n  <div style=\"background:linear-gradient(135deg,#7c3aed,#a855f7);padding:30px 40px;border-radius:12px 12px 0 0;\">\n    <div style=\"color:white;font-size:24px;font-weight:700;letter-spacing:-0.5px;\">🧠 Cerebrin</div>\n    <div style=\"color:rgba(255,255,255,0.8);font-size:13px;margin-top:4px;\">Informe generado automáticamente</div>\n  </div>\n  \n  <!-- Body -->\n  <div style=\"padding:30px 40px;border:1px solid #e5e7eb;border-top:none;\">\n    <h1 style=\"font-size:22px;color:#1a1a2e;margin:0 0 20px;\">${title}</h1>\n    \n    ${htmlBody}\n    \n    ${pdfUrl ? '<div style=\"margin:25px 0;text-align:center;\"><a href=\"' + pdfUrl + '\" style=\"display:inline-block;background:#7c3aed;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;\">📄 Descargar PDF</a></div>' : ''}\n  </div>\n  \n  <!-- Footer -->\n  <div style=\"padding:20px 40px;background:#f9fafb;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;text-align:center;\">\n    <p style=\"margin:0;font-size:11px;color:#9ca3af;\">Generado por <strong style=\"color:#7c3aed;\">Cerebrin AI</strong> · Pipeline: ${pipelineId}</p>\n    <p style=\"margin:4px 0 0;font-size:11px;color:#9ca3af;\">${new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>\n  </div>\n</div>`;\n\nreturn {\n  json: {\n    to: recipientEmail,\n    recipientName,\n    subject: '📋 ' + title,\n    htmlBody: emailHtml,\n    textBody: content.substring(0, 2000),\n    pdfUrl,\n    pipelineId\n  }\n};"
+            },
+            "id": "prepare-email",
+            "name": "Preparar Email HTML",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "fromEmail": "={{ $env.SMTP_FROM_EMAIL || 'cerebrin@tudominio.com' }}",
+                "toEmail": "={{ $json.to }}",
+                "subject": "={{ $json.subject }}",
+                "emailType": "html",
+                "html": "={{ $json.htmlBody }}",
+                "options": {
+                    "replyTo": "={{ $env.SMTP_REPLY_TO || 'no-reply@tudominio.com' }}"
+                }
+            },
+            "id": "send-email",
+            "name": "Enviar Email",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                660,
+                300
+            ],
+            "credentials": {
+                "smtp": {
+                    "id": "smtp-cerebrin",
+                    "name": "SMTP Cerebrin"
+                }
+            },
+            "notes": "Configura SMTP en n8n: Settings → Credentials → New → SMTP. Puedes usar Gmail (smtp.gmail.com:587), SendGrid, o tu propio servidor."
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ JSON.stringify({ success: true, sent_to: $('Preparar Email HTML').item.json.to, subject: $('Preparar Email HTML').item.json.subject }) }}"
+            },
+            "id": "respond-email",
+            "name": "Responder al Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                880,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook — Enviar Email": {
+            "main": [
+                [
+                    {
+                        "node": "Preparar Email HTML",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Preparar Email HTML": {
+            "main": [
+                [
+                    {
+                        "node": "Enviar Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Enviar Email": {
+            "main": [
+                [
+                    {
+                        "node": "Responder al Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "saveManualExecutions": true
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "cerebrin"
+        },
+        {
+            "name": "email"
+        }
+    ],
+    "triggerCount": 1,
+    "updatedAt": "2026-02-22T06:00:00.000Z",
+    "versionId": "1"
+}

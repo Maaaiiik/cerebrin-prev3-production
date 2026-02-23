@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  # 🧠 1. BACKEND API (Cerebrin OS Core)
+  backend:
+    container_name: cerebrin-backend
+    build:
+      context: ./app-backend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_ENABLED=${GEMINI_ENABLED}
+      - N8N_MASTER_WEBHOOK_URL=http://n8n:5678/webhook/master-orchestrator
+    networks:
+      - cerebrin-grid
+
+  # 🏰 2. NEXO ADMIN CENTER (Super Admin)
+  nexo:
+    container_name: cerebrin-nexo
+    build:
+      context: ./app-nexo
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3002:3000"
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - ADMIN_SECRET=${ADMIN_SECRET:-super_secret_nexo}
+    networks:
+      - cerebrin-grid
+
+  # 🎨 3. FRONT-V3 (User Chat UI)
+  front-v3:
+    container_name: cerebrin-front-v3
+    build:
+      context: ./app-front-v3
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://backend:3001
+    networks:
+      - cerebrin-grid
+
+  # ⚙️ 4. N8N ORCHESTRATOR
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: cerebrin-n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-cerebrin_pass}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - cerebrin-grid
+
+networks:
+  cerebrin-grid:
+    driver: bridge
+
+volumes:
+  n8n_data:

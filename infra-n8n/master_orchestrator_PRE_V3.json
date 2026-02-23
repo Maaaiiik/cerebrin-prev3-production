@@ -1,0 +1,100 @@
+{
+    "name": "Cerebrin PRE-V3 Master Orchestrator",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "master-orchestrator",
+                "options": {}
+            },
+            "name": "Webhook Receiver",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "id": "webhook-receiver"
+        },
+        {
+            "parameters": {
+                "model": "gemini-1.5-flash",
+                "prompt": "=Analiza este mensaje del usuario: \"{{$node[\"Webhook Receiver\"].json[\"body\"][\"raw_input\"]}}\". \n\nTu tarea es extraer:\n1. Monto (número)\n2. Detalle (string)\n3. Categoría (Gasto, Salud, Nota, Compra)\n4. Nombre de Hoja sugerida (ej: Gastos_Mensuales)\n\nDevuelve únicamente un JSON válido.",
+                "options": {}
+            },
+            "name": "Flash Brain (Classifier)",
+            "type": "n8n-nodes-base.googleGemini",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ],
+            "id": "classifier"
+        },
+        {
+            "parameters": {
+                "operation": "append",
+                "documentId": "TU_SPREADSHEET_ID_AQUI",
+                "sheetName": "={{$node[\"Flash Brain (Classifier)\"].json[\"hoja\"]}}",
+                "options": {}
+            },
+            "name": "Google Sheets Writer",
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 3,
+            "position": [
+                700,
+                300
+            ],
+            "id": "sheets-writer"
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"text\": \"He anotado '{{$node[\\\"Flash Brain (Classifier)\\\"].json[\\\"detalle\\\"]}}' por ${{$node[\\\"Flash Brain (Classifier)\\\"].json[\\\"monto\\\"]}} en tu hoja de {{$node[\\\"Flash Brain (Classifier)\\\"].json[\\\"hoja\\\"]}}.\",\n  \"action_card\": {\n    \"title\": \"Ver en Sheets\",\n    \"url\": \"https://docs.google.com/spreadsheets/d/TU_SPREADSHEET_ID_AQUI\",\n    \"actions\": [\"undo\", \"edit\"]\n  }\n}"
+            },
+            "name": "Response to Front",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                950,
+                300
+            ],
+            "id": "responder"
+        }
+    ],
+    "connections": {
+        "Webhook Receiver": {
+            "main": [
+                [
+                    {
+                        "node": "Flash Brain (Classifier)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Flash Brain (Classifier)": {
+            "main": [
+                [
+                    {
+                        "node": "Google Sheets Writer",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Sheets Writer": {
+            "main": [
+                [
+                    {
+                        "node": "Response to Front",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
